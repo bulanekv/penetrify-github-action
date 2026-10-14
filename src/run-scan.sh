@@ -58,6 +58,14 @@ esac
 
 mkdir -p "$OUTPUT_DIR"
 
+# Dashboard origin for report links: the public API maps to app.penetrify.cloud;
+# any other api-base (staging, self-hosted) serves the dashboard on its own host.
+if [[ "$API_BASE" == "https://api.penetrify.cloud/api/v1" ]]; then
+  DASHBOARD_BASE="https://app.penetrify.cloud"
+else
+  DASHBOARD_BASE="${API_BASE%/api/v1}"
+fi
+
 # Helper: curl with auth
 penetrify_curl() {
   curl -s -H "X-API-Key: $PENETRIFY_API_KEY" -H "Content-Type: application/json" "$@"
@@ -176,7 +184,7 @@ if [[ "$WAIT" == "true" ]]; then
   echo "critical-count=$CRITICAL" >> "$GITHUB_OUTPUT"
   echo "high-count=$HIGH" >> "$GITHUB_OUTPUT"
 
-  REPORT_URL="https://app.penetrify.cloud/#/applications/$APPLICATION_ID/tests/$TEST_ID"
+  REPORT_URL="$DASHBOARD_BASE/#/applications/$APPLICATION_ID/tests/$TEST_ID"
   echo "report-url=$REPORT_URL" >> "$GITHUB_OUTPUT"
 
   echo ""
@@ -212,5 +220,5 @@ if [[ "$WAIT" == "true" ]]; then
 
 else
   echo "status=triggered" >> "$GITHUB_OUTPUT"
-  echo "Scan triggered in async mode. Check results at: https://app.penetrify.cloud/#/applications/$APPLICATION_ID/tests/$TEST_ID"
+  echo "Scan triggered in async mode. Check results at: $DASHBOARD_BASE/#/applications/$APPLICATION_ID/tests/$TEST_ID"
 fi
