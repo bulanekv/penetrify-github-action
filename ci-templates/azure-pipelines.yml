@@ -21,6 +21,7 @@ stages:
             displayName: Penetrify scan
             env:
               PENETRIFY_API_KEY: $(PENETRIFY_API_KEY)
+          # NOTE: the report contains exploitable findings (URLs, evidence) — restrict who can read these artifacts.
           - task: PublishBuildArtifacts@1
             condition: always()
             inputs:

@@ -11,6 +11,7 @@ definitions:
           - curl -fsSL https://downloads.penetrify.cloud/cli/install.sh | PENETRIFY_INSTALL_DIR=/usr/local/bin sh
           - export PENETRIFY_AUTHORIZED=true   # you own / are authorized to test SCAN_URL
           - penetrify scan "$SCAN_URL" --app "$PENETRIFY_APP_ID" --mode standard --fail-on critical,high --format json --output penetrify-report.json
+        # NOTE: the report contains exploitable findings (URLs, evidence) — restrict who can read these artifacts.
         artifacts:
           - penetrify-report.json
 pipelines:

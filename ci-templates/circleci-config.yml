@@ -19,6 +19,7 @@ jobs:
               --app "$PENETRIFY_APP_ID" --mode standard \
               --fail-on critical,high \
               --format json --output penetrify-report.json
+      # NOTE: the report contains exploitable findings (URLs, evidence) — restrict who can read these artifacts.
       - store_artifacts:
           path: penetrify-report.json
 workflows:

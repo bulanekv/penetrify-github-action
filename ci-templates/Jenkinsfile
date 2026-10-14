@@ -23,6 +23,7 @@ pipeline {
         '''
       }
       post {
+        // The report contains exploitable findings — restrict job read access accordingly.
         always { archiveArtifacts artifacts: 'penetrify-report.json', allowEmptyArchive: true }
       }
     }

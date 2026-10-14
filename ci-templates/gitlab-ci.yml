@@ -34,7 +34,10 @@
         --fail-on "$PENETRIFY_FAIL_ON"
         --timeout "$PENETRIFY_TIMEOUT"
         --format json --output penetrify-report.json
+  # The report lists exploitable findings (URLs, parameters, evidence): keep it
+  # out of anonymous reach on public projects and do not retain it for long.
   artifacts:
     when: always
+    public: false
     paths: [penetrify-report.json]
-    expire_in: 30 days
+    expire_in: 7 days
