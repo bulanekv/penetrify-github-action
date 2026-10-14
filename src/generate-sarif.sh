@@ -108,7 +108,7 @@ jq -n \
               "**" + .title + "**\n\n" +
               .description + "\n\n" +
               "**Severity:** " + .severity + "\n" +
-              "**Affected URL:** " + (.affected_url // "N/A") + "\n\n" +
+              "**Affected URL:** " + (.url // .affected_url // "N/A") + "\n\n" +
               if .recommendation then "**Remediation:** " + .recommendation else "" end
             )
           },
@@ -116,7 +116,7 @@ jq -n \
             {
               "physicalLocation": {
                 "artifactLocation": {
-                  "uri": (.affected_url // "unknown"),
+                  "uri": (.url // .affected_url // "unknown"),
                   "uriBaseId": "%SRCROOT%"
                 }
               }
