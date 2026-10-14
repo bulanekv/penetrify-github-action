@@ -13,10 +13,12 @@ Penetrify scans your application for real-world vulnerabilities — SQL injectio
 
 ```yaml
 - name: Run Penetrify Scan
-  uses: penetrify/penetrify-action@v1
+  uses: bulanekv/penetrify-github-action@v1
   with:
     api-key: ${{ secrets.PENETRIFY_API_KEY }}
+    application-id: 'app_xxxxxxxxxxxx'   # from the Penetrify dashboard
     target: 'https://staging.your-app.com'
+    authorization-confirmed: true        # you own / are authorized to test the target
 ```
 
 That's it. Results appear in your repository's **Security → Code scanning** tab.
@@ -33,8 +35,11 @@ That's it. Results appear in your repository's **Security → Code scanning** ta
 | Input | Required | Default | Description |
 |-------|----------|---------|-------------|
 | `api-key` | ✅ | — | Your Penetrify API key (store as a GitHub Secret) |
-| `target` | ✅ | — | URL or endpoint to scan |
-| `scan-type` | ❌ | `full` | Scan type: `full`, `quick`, `api`, `web` |
+| `application-id` | ✅ | — | Penetrify application ID (dashboard → application → ID) |
+| `authorization-confirmed` | ✅ | `false` | Must be `true`: you own or are explicitly authorized to test the target |
+| `target` | ❌ | — | URL to scan; overrides the application's default target |
+| `scan-type` | ❌ | `standard` | `quick` (0.5 credits), `standard` (1), `deep` (2) |
+| `api-base` | ❌ | `https://api.penetrify.cloud/api/v1` | API base URL (staging / self-hosted only) |
 | `severity-threshold` | ❌ | `high` | Fail build on this severity or above: `critical`, `high`, `medium`, `low` |
 | `wait-for-results` | ❌ | `true` | Wait for completion (`true`) or fire-and-forget (`false`) |
 | `timeout` | ❌ | `1800` | Max wait time in seconds |
@@ -45,7 +50,7 @@ That's it. Results appear in your repository's **Security → Code scanning** ta
 
 | Output | Description |
 |--------|-------------|
-| `scan-id` | Unique scan identifier |
+| `test-id` | Unique scan (test) identifier |
 | `status` | Final status: `completed`, `failed`, `timeout` |
 | `findings-count` | Total number of findings |
 | `critical-count` | Number of critical findings |
@@ -71,9 +76,11 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
-      - uses: penetrify/penetrify-action@v1
+      - uses: bulanekv/penetrify-github-action@v1
         with:
           api-key: ${{ secrets.PENETRIFY_API_KEY }}
+          application-id: 'app_xxxxxxxxxxxx'
+          authorization-confirmed: true
           target: 'https://staging.myapp.com'
           severity-threshold: 'high'
 ```
@@ -94,9 +101,11 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
-      - uses: penetrify/penetrify-action@v1
+      - uses: bulanekv/penetrify-github-action@v1
         with:
           api-key: ${{ secrets.PENETRIFY_API_KEY }}
+          application-id: 'app_xxxxxxxxxxxx'
+          authorization-confirmed: true
           target: 'https://preview-${{ github.event.pull_request.number }}.myapp.com'
           scan-type: 'quick'
           severity-threshold: 'critical'
@@ -118,11 +127,13 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
-      - uses: penetrify/penetrify-action@v1
+      - uses: bulanekv/penetrify-github-action@v1
         with:
           api-key: ${{ secrets.PENETRIFY_API_KEY }}
+          application-id: 'app_xxxxxxxxxxxx'
+          authorization-confirmed: true
           target: 'https://app.mycompany.com'
-          scan-type: 'full'
+          scan-type: 'standard'
           severity-threshold: 'medium'
           timeout: '3600'
 ```
@@ -130,7 +141,7 @@ jobs:
 ### Fire-and-forget (async)
 
 ```yaml
-- uses: penetrify/penetrify-action@v1
+- uses: bulanekv/penetrify-github-action@v1
   with:
     api-key: ${{ secrets.PENETRIFY_API_KEY }}
     target: 'https://staging.myapp.com'
@@ -156,7 +167,7 @@ When `upload-sarif` is enabled (default), scan findings appear natively in GitHu
 ## Support
 
 - Documentation: [docs.penetrify.cloud](https://docs.penetrify.cloud)
-- Issues: [GitHub Issues](https://github.com/penetrify/penetrify-action/issues)
+- Issues: [GitHub Issues](https://github.com/bulanekv/penetrify-github-action/issues)
 - Email: support@penetrify.cloud
 
 ## License

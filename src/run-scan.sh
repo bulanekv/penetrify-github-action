@@ -9,7 +9,9 @@ set -euo pipefail
 # --- Parse Arguments ---
 APPLICATION_ID=""
 TARGET=""
-SCAN_TYPE="automatic"
+SCAN_TYPE="standard"
+AUTHORIZATION_CONFIRMED="false"
+API_BASE="https://api.penetrify.cloud/api/v1"
 SEVERITY_THRESHOLD="high"
 WAIT="true"
 TIMEOUT=1800
@@ -24,6 +26,8 @@ while [[ $# -gt 0 ]]; do
     --wait)               WAIT="$2"; shift 2 ;;
     --timeout)            TIMEOUT="$2"; shift 2 ;;
     --output-dir)         OUTPUT_DIR="$2"; shift 2 ;;
+    --authorization-confirmed) AUTHORIZATION_CONFIRMED="$2"; shift 2 ;;
+    --api-base)           API_BASE="${2%/}"; shift 2 ;;
     *)                    echo "Unknown option: $1"; exit 1 ;;
   esac
 done
@@ -39,9 +43,28 @@ if [[ -z "${PENETRIFY_API_KEY:-}" ]]; then
   exit 1
 fi
 
+# The API refuses to create a scan without an explicit ownership attestation.
+# Fail here with a clear message instead of a bare HTTP 403 later.
+if [[ "$AUTHORIZATION_CONFIRMED" != "true" ]]; then
+  echo "::error::Set 'authorization-confirmed: true' to confirm you own or are authorized to test the target. Penetrify refuses scans without this attestation."
+  exit 1
+fi
+
+case "$SCAN_TYPE" in
+  quick|standard|deep) ;;
+  automatic|full|api|web) echo "::notice::scan-type '$SCAN_TYPE' is a legacy alias; running a standard scan"; SCAN_TYPE="standard" ;;
+  *) echo "::error::Unknown scan-type '$SCAN_TYPE' (use quick, standard or deep)"; exit 1 ;;
+esac
+
 mkdir -p "$OUTPUT_DIR"
 
-API_BASE="https://api.penetrify.cloud/api/v1"
+# Dashboard origin for report links: the public API maps to app.penetrify.cloud;
+# any other api-base (staging, self-hosted) serves the dashboard on its own host.
+if [[ "$API_BASE" == "https://api.penetrify.cloud/api/v1" ]]; then
+  DASHBOARD_BASE="https://app.penetrify.cloud"
+else
+  DASHBOARD_BASE="${API_BASE%/api/v1}"
+fi
 
 # Helper: curl with auth
 penetrify_curl() {
@@ -66,7 +89,8 @@ PAYLOAD=$(jq -n \
   '{
     name: $name,
     scan_mode: $scan_mode,
-    target_urls: (if $target != "" then [$target] else [] end)
+    target_urls: (if $target != "" then [$target] else [] end),
+    authorization_confirmed: true
   }')
 
 CREATE_RESPONSE=$(penetrify_curl_with_code \
@@ -74,7 +98,7 @@ CREATE_RESPONSE=$(penetrify_curl_with_code \
   -d "$PAYLOAD")
 
 HTTP_CODE=$(echo "$CREATE_RESPONSE" | tail -1)
-BODY=$(echo "$CREATE_RESPONSE" | head -n -1)
+BODY=$(echo "$CREATE_RESPONSE" | sed '$d')
 
 if [[ "$HTTP_CODE" != "201" && "$HTTP_CODE" != "200" ]]; then
   echo "::error::Failed to create test (HTTP $HTTP_CODE): $BODY"
@@ -95,7 +119,7 @@ START_RESPONSE=$(penetrify_curl_with_code \
   -X POST "$API_BASE/applications/$APPLICATION_ID/tests/$TEST_ID/start")
 
 HTTP_CODE=$(echo "$START_RESPONSE" | tail -1)
-BODY=$(echo "$START_RESPONSE" | head -n -1)
+BODY=$(echo "$START_RESPONSE" | sed '$d')
 
 if [[ "$HTTP_CODE" != "200" ]]; then
   echo "::error::Failed to start test (HTTP $HTTP_CODE): $BODY"
@@ -149,7 +173,7 @@ if [[ "$WAIT" == "true" ]]; then
   echo "$RESULTS" > "$OUTPUT_DIR/results.json"
 
   # Parse counts from vulnerability list
-  VULNS=$(echo "$RESULTS" | jq '.data.vulnerabilities')
+  VULNS=$(echo "$RESULTS" | jq '.data.vulnerabilities // []')
   TOTAL=$(echo "$VULNS" | jq 'length')
   CRITICAL=$(echo "$VULNS" | jq '[.[] | select(.severity == "critical")] | length')
   HIGH=$(echo "$VULNS" | jq '[.[] | select(.severity == "high")] | length')
@@ -160,7 +184,7 @@ if [[ "$WAIT" == "true" ]]; then
   echo "critical-count=$CRITICAL" >> "$GITHUB_OUTPUT"
   echo "high-count=$HIGH" >> "$GITHUB_OUTPUT"
 
-  REPORT_URL="https://app.penetrify.cloud/tests/$TEST_ID"
+  REPORT_URL="$DASHBOARD_BASE/#/applications/$APPLICATION_ID/tests/$TEST_ID"
   echo "report-url=$REPORT_URL" >> "$GITHUB_OUTPUT"
 
   echo ""
@@ -196,5 +220,5 @@ if [[ "$WAIT" == "true" ]]; then
 
 else
   echo "status=triggered" >> "$GITHUB_OUTPUT"
-  echo "Scan triggered in async mode. Check results at: https://app.penetrify.cloud/tests/$TEST_ID"
+  echo "Scan triggered in async mode. Check results at: $DASHBOARD_BASE/#/applications/$APPLICATION_ID/tests/$TEST_ID"
 fi
