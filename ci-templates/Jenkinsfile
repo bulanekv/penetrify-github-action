@@ -1,0 +1,30 @@
+// Penetrify scan stage for a Jenkins declarative pipeline.
+// Credentials: a "Secret text" credential with id `penetrify-api-key`.
+pipeline {
+  agent any
+  environment {
+    PENETRIFY_API_KEY   = credentials('penetrify-api-key')
+    PENETRIFY_APP_ID    = 'app_xxxxxxxxxxxx'
+    PENETRIFY_AUTHORIZED = 'true'   // you own / are authorized to test SCAN_URL
+    SCAN_URL            = 'https://staging.myapp.io'
+  }
+  stages {
+    stage('Deploy to staging') {
+      steps { sh './scripts/deploy-staging.sh' }
+    }
+    stage('Penetrify scan') {
+      steps {
+        sh 'curl -fsSL https://downloads.penetrify.cloud/cli/install.sh | PENETRIFY_INSTALL_DIR=$WORKSPACE/bin sh'
+        sh '''
+          $WORKSPACE/bin/penetrify scan "$SCAN_URL" \
+            --app "$PENETRIFY_APP_ID" --mode standard \
+            --fail-on critical,high \
+            --format json --output penetrify-report.json
+        '''
+      }
+      post {
+        always { archiveArtifacts artifacts: 'penetrify-report.json', allowEmptyArchive: true }
+      }
+    }
+  }
+}

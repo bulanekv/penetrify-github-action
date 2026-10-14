@@ -1,0 +1,28 @@
+# Penetrify scan stage for Azure DevOps Pipelines.
+# Variable group / secret variables: PENETRIFY_API_KEY (secret), PENETRIFY_APP_ID, SCAN_URL.
+stages:
+  - stage: Security
+    dependsOn: DeployStaging
+    jobs:
+      - job: PenetrifyScan
+        timeoutInMinutes: 90
+        pool:
+          vmImage: ubuntu-latest
+        variables:
+          PENETRIFY_AUTHORIZED: 'true'   # you own / are authorized to test SCAN_URL
+        steps:
+          - script: curl -fsSL https://downloads.penetrify.cloud/cli/install.sh | PENETRIFY_INSTALL_DIR=$(Agent.ToolsDirectory)/penetrify sh
+            displayName: Install Penetrify CLI
+          - script: |
+              $(Agent.ToolsDirectory)/penetrify/penetrify scan "$(SCAN_URL)" \
+                --app "$(PENETRIFY_APP_ID)" --mode standard \
+                --fail-on critical,high \
+                --format json --output $(Build.ArtifactStagingDirectory)/penetrify-report.json
+            displayName: Penetrify scan
+            env:
+              PENETRIFY_API_KEY: $(PENETRIFY_API_KEY)
+          - task: PublishBuildArtifacts@1
+            condition: always()
+            inputs:
+              pathToPublish: $(Build.ArtifactStagingDirectory)/penetrify-report.json
+              artifactName: penetrify-report

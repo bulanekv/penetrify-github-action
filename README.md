@@ -58,6 +58,24 @@ That's it. Results appear in your repository's **Security → Code scanning** ta
 | `report-url` | Link to the full report on penetrify.cloud |
 | `sarif-file` | Path to the generated SARIF file |
 
+## Other CI systems
+
+The same scan runs anywhere the [Penetrify CLI](https://www.penetrify.cloud/ci-cd) runs
+(`curl -fsSL https://downloads.penetrify.cloud/cli/install.sh | sh`). Ready-made templates
+live in [`ci-templates/`](ci-templates/):
+
+| CI | Template |
+|----|----------|
+| GitLab CI | [`ci-templates/gitlab-ci.yml`](ci-templates/gitlab-ci.yml) — `include:` it and `extends: .penetrify-scan` |
+| Jenkins | [`ci-templates/Jenkinsfile`](ci-templates/Jenkinsfile) |
+| CircleCI | [`ci-templates/circleci-config.yml`](ci-templates/circleci-config.yml) |
+| Bitbucket Pipelines | [`ci-templates/bitbucket-pipelines.yml`](ci-templates/bitbucket-pipelines.yml) |
+| Azure DevOps | [`ci-templates/azure-pipelines.yml`](ci-templates/azure-pipelines.yml) |
+
+All of them run `penetrify scan <url> --app <id> --fail-on critical,high` and set
+`PENETRIFY_AUTHORIZED=true` (you own or are authorized to test the target). Exit code 2 means
+the gate was hit, 1 an error or timeout.
+
 ## Examples
 
 ### Basic: Scan on push to main

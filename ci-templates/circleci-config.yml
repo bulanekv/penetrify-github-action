@@ -1,0 +1,28 @@
+# Penetrify scan job for CircleCI (.circleci/config.yml).
+# Context/env vars: PENETRIFY_API_KEY (sk-pfy_…), PENETRIFY_APP_ID, SCAN_URL.
+version: 2.1
+jobs:
+  penetrify-scan:
+    docker:
+      - image: cimg/base:stable
+    environment:
+      PENETRIFY_AUTHORIZED: "true"   # you own / are authorized to test SCAN_URL
+    steps:
+      - run:
+          name: Install Penetrify CLI
+          command: curl -fsSL https://downloads.penetrify.cloud/cli/install.sh | PENETRIFY_INSTALL_DIR=$HOME/.local/bin sh
+      - run:
+          name: Scan staging
+          no_output_timeout: 90m
+          command: |
+            $HOME/.local/bin/penetrify scan "$SCAN_URL" \
+              --app "$PENETRIFY_APP_ID" --mode standard \
+              --fail-on critical,high \
+              --format json --output penetrify-report.json
+      - store_artifacts:
+          path: penetrify-report.json
+workflows:
+  deploy-and-scan:
+    jobs:
+      - penetrify-scan:
+          requires: [deploy-staging]

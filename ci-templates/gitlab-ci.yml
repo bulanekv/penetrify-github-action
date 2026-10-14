@@ -1,0 +1,40 @@
+# Penetrify scan job for GitLab CI.
+#
+# Usage (in your .gitlab-ci.yml):
+#   include:
+#     - remote: https://raw.githubusercontent.com/bulanekv/penetrify-github-action/v1/ci-templates/gitlab-ci.yml
+#   penetrify-scan:
+#     extends: .penetrify-scan
+#     needs: [deploy-staging]
+#     variables:
+#       PENETRIFY_APP_ID: app_xxxxxxxxxxxx
+#       SCAN_URL: https://staging.myapp.io
+#
+# CI/CD variables (Settings → CI/CD → Variables, masked):
+#   PENETRIFY_API_KEY   sk-pfy_… (Dashboard → Settings → API keys)
+#
+# By setting PENETRIFY_AUTHORIZED=true you confirm you own the target or are
+# explicitly authorized to security-test it. Exit code 2 = findings at or
+# above the gate (job fails), 1 = error/timeout, 0 = passed.
+.penetrify-scan:
+  image: alpine:3.20
+  variables:
+    PENETRIFY_AUTHORIZED: "true"
+    PENETRIFY_SCAN_MODE: standard        # quick | standard | deep
+    PENETRIFY_FAIL_ON: critical,high     # or "none" to report only
+    PENETRIFY_TIMEOUT: "5400"
+    GIT_STRATEGY: none
+  before_script:
+    - apk add --no-cache curl
+    - curl -fsSL https://downloads.penetrify.cloud/cli/install.sh | PENETRIFY_INSTALL_DIR=/usr/local/bin sh
+  script:
+    - penetrify scan "$SCAN_URL"
+        --app "$PENETRIFY_APP_ID"
+        --mode "$PENETRIFY_SCAN_MODE"
+        --fail-on "$PENETRIFY_FAIL_ON"
+        --timeout "$PENETRIFY_TIMEOUT"
+        --format json --output penetrify-report.json
+  artifacts:
+    when: always
+    paths: [penetrify-report.json]
+    expire_in: 30 days
