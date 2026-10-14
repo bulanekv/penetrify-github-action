@@ -26,12 +26,13 @@ jobs:
 
       - name: Run Penetrify Scan
         id: scan
-        uses: penetrify/penetrify-action@v1
+        uses: bulanekv/penetrify-github-action@v1
         with:
           api-key: ${{ secrets.PENETRIFY_API_KEY }}
           application-id: ${{ secrets.PENETRIFY_APP_ID }}
+          authorization-confirmed: true
           target: 'https://staging.your-app.com'
-          scan-type: 'automatic'
+          scan-type: 'standard'
           severity-threshold: 'high'
 
       - name: Print Summary

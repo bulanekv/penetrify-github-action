@@ -21,10 +21,11 @@ jobs:
 
       - name: Penetrify Quick Scan
         id: scan
-        uses: penetrify/penetrify-action@v1
+        uses: bulanekv/penetrify-github-action@v1
         with:
           api-key: ${{ secrets.PENETRIFY_API_KEY }}
           application-id: ${{ secrets.PENETRIFY_APP_ID }}
+          authorization-confirmed: true
           target: 'https://preview-${{ github.event.pull_request.number }}.your-app.com'
           scan-type: 'quick'
           severity-threshold: 'critical'
@@ -78,10 +79,11 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Penetrify Full Scan
-        uses: penetrify/penetrify-action@v1
+        uses: bulanekv/penetrify-github-action@v1
         with:
           api-key: ${{ secrets.PENETRIFY_API_KEY }}
           application-id: ${{ secrets.PENETRIFY_APP_ID }}
+          authorization-confirmed: true
           target: 'https://staging.your-app.com'
           scan-type: 'deep'
           severity-threshold: 'high'

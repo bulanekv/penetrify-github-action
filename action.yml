@@ -20,11 +20,24 @@ inputs:
     required: false
     default: ''
 
+  authorization-confirmed:
+    description: >-
+      Set to "true" to confirm you own the target application or are explicitly
+      authorized to security-test it. Required by the Penetrify API since the
+      2026-10 hardening: a scan request without it is rejected (HTTP 403).
+    required: true
+    default: 'false'
+
   scan-type:
-    description: 'Scan mode: quick (0.5 credits), automatic (1 credit), deep (2 credits)'
+    description: 'Scan mode: quick (0.5 credits), standard (1 credit), deep (2 credits)'
     required: false
-    default: 'automatic'
-    # Options: quick, automatic, deep
+    default: 'standard'
+    # Options: quick, standard, deep ("automatic" is accepted as an alias of standard)
+
+  api-base:
+    description: 'Penetrify API base URL (override only for staging / self-hosted)'
+    required: false
+    default: 'https://api.penetrify.cloud/api/v1'
 
   severity-threshold:
     description: 'Minimum severity to fail the build (critical, high, medium, low, info)'
@@ -87,6 +100,8 @@ runs:
         ${{ github.action_path }}/src/run-scan.sh \
           --application-id "${{ inputs.application-id }}" \
           --target "${{ inputs.target }}" \
+          --authorization-confirmed "${{ inputs.authorization-confirmed }}" \
+          --api-base "${{ inputs.api-base }}" \
           --scan-type "${{ inputs.scan-type }}" \
           --severity-threshold "${{ inputs.severity-threshold }}" \
           --wait "${{ inputs.wait-for-results }}" \
